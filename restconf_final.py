@@ -3,11 +3,15 @@ import requests
 requests.packages.urllib3.disable_warnings()
 
 # Router IP Address is 10.0.15.181-184
-api_url = "<!!!REPLACEME with URL of RESTCONF Configuration API!!!>"
+router_ip = "10.0.15.61"  # เปลี่ยนตาม Router ที่ต้องการ
+api_url = f"https://{router_ip}/restconf/data/Cisco-IOS-XE-native:native/interface"
 
 # the RESTCONF HTTP headers, including the Accept and Content-Type
 # Two YANG data formats (JSON and XML) work with RESTCONF 
-headers = <!!!REPLACEME with Accept and Content-Type information headers!!!>
+headers = {
+    "Accept": "application/yang-data+json",      # รับข้อมูล JSON
+    "Content-Type": "application/yang-data+json" # ส่งข้อมูล JSON
+}
 basicauth = ("admin", "cisco")
 
 
@@ -104,3 +108,6 @@ def status():
         return "<!!!REPLACEME with proper message!!!>"
     else:
         print('Error. Status Code: {}'.format(resp.status_code))
+
+def showrunningconfig():
+

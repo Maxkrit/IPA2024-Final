@@ -6,20 +6,28 @@
 #######################################################################################
 # 1. Import libraries for API requests, JSON formatting, time, os, (restconf_final or netconf_final), netmiko_final, and ansible_final.
 
-<!!!REPLACEME with code for libraries>
+import requests
+import json
+import time
+import os
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+# import restconf_final
 
 #######################################################################################
-# 2. Assign the Webex access token to the variable ACCESS_TOKEN using environment variables.
+# 2. Assign the Webex accesssetx WEBEX_TOKEN "OGFmNzY3MjMtMzM5OS00MTYwLThkM2QtYTBmN2EzZGQ4YmQ1YTA1YWFkNzktMDRh_PS65_e37c9b35-5d15-4275-8997-b5c6f91a842d"
 
-ACCESS_TOKEN = os.environ."<!!!REPLACEME with os.environ method and environment variable!!!>"
+ACCESS_TOKEN = os.environ["WEBEX_TOKEN"]
 
 #######################################################################################
 # 3. Prepare parameters get the latest message for messages API.
 
 # Defines a variable that will hold the roomId
 roomIdToGetMessages = (
-    "<!!!REPLACEME with roomID of the IPA2024 Webex Teams room!!!>"
+    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vN2Q0Nzk0MDAtYWFiOS0xMWYwLWIyMjEtM2Q0YjM3Nzk0OTVl"
 )
+
+last_message_id = None  # เก็บ ID ของข้อความล่าสุดที่เราอ่านแล้ว
 
 while True:
     # always add 1 second of delay to the loop to not go over a rate limit of API calls
@@ -30,8 +38,9 @@ while True:
     #  "max": 1  limits to get only the very last message in the room
     getParameters = {"roomId": roomIdToGetMessages, "max": 1}
 
+    
     # the Webex Teams HTTP header, including the Authoriztion
-    getHTTPHeader = {"Authorization": <!!!REPLACEME!!!>}
+    getHTTPHeader = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
 
 # 4. Provide the URL to the Webex Teams messages API, and extract location from the received message.
     
@@ -39,9 +48,9 @@ while True:
     # - Use the GetParameters to get only the latest message.
     # - Store the message in the "r" variable.
     r = requests.get(
-        "<!!!REPLACEME with URL of Webex Teams Messages API!!!>",
-        params=<!!!REPLACEME with HTTP parameters!!!>,
-        headers=<!!!REPLACEME with HTTP headers!!!>,
+        "https://webexapis.com/v1/messages",
+        params=getParameters,
+        headers=getHTTPHeader,
     )
     # verify if the retuned HTTP status code is 200/OK
     if not r.status_code == 200:
@@ -50,45 +59,45 @@ while True:
         )
 
     # get the JSON formatted returned data
-    json_data = r.json()
+    messages = r.json().get("items", [])
+    if not messages:
+        continue
 
-    # check if there are any messages in the "items" array
-    if len(json_data["items"]) == 0:
-        raise Exception("There are no messages in the room.")
+    message = messages[0]
+    message_id = message["id"]
+    message_text = message["text"].strip()
 
-    # store the array of messages
-    messages = json_data["items"]
+    if not message_text.startswith("/66070007"):
+        continue
     
-    # store the text of the first message in the array
-    message = messages[0]["text"]
-    print("Received message: " + message)
+    if message_id == last_message_id:
+        continue
 
-    # check if the text of the message starts with the magic character "/" followed by your studentID and a space and followed by a command name
-    #  e.g.  "/66070123 create"
-    if message.startswith("<!!!REPLACEME!!!>"):
+    print("Received message:", message_text)
+    last_message_id = message_id
 
-        # extract the command
-        command = <!!!REPLACEME!!!>
-        print(command)
+    # แยก student_id และ command
+    parts = message_text.lstrip("/").split()
+    student_id = parts[0]
+    command = " ".join(parts[1:]) if len(parts) > 1 else ""
 
 # 5. Complete the logic for each command
 
-        if command == "create":
-            <!!!REPLACEME with code for create command!!!>     
-        elif command == "delete":
-            <!!!REPLACEME with code for delete command!!!>
-        elif command == "enable":
-            <!!!REPLACEME with code for enable command!!!>
-        elif command == "disable":
-            <!!!REPLACEME with code for disable command!!!>
-        elif command == "status":
-            <!!!REPLACEME with code for status command!!!>
-         elif command == "gigabit_status":
-            <!!!REPLACEME with code for gigabit_status command!!!>
-        elif command == "showrun":
-            <!!!REPLACEME with code for showrun command!!!>
-        else:
-            responseMessage = "Error: No command or unknown command"
+    responseMessage = ""
+    # ตรวจสอบว่าข้อความนี้เราอ่านแล้วหรือยัง
+    if command == ("create"):
+        print("create")
+    elif command == "delete":
+        print("delete")
+    elif command == "enable":
+        print("enable")
+    elif command == "disable":
+        print("disable")
+    elif command == "status":
+        print("status")
+    elif command == "gigabit_status":
+        print("gigabit-status")
+    else:
         
 # 6. Complete the code to post the message to the Webex Teams room.
 
@@ -104,35 +113,43 @@ while True:
         # Read Send a Message with Attachments Local File Attachments
         # https://developer.webex.com/docs/basics for more detail
 
-        if command == "showrun" and responseMessage == 'ok':
-            filename = "<!!!REPLACEME with show run filename and path!!!>"
-            fileobject = <!!!REPLACEME with open file!!!>
-            filetype = "<!!!REPLACEME with Content-type of the file!!!>"
-            postData = {
-                "roomId": <!!!REPLACEME!!!>,
-                "text": "show running config",
-                "files": (<!!!REPLACEME!!!>, <!!!REPLACEME!!!>, <!!!REPLACEME!!!>),
-            }
-            postData = MultipartEncoder(<!!!REPLACEME!!!>)
-            HTTPHeaders = {
-            "Authorization": ACCESS_TOKEN,
-            "Content-Type": <!!!REPLACEME with postData Content-Type!!!>,
-            }
-        # other commands only send text, or no attached file.
-        else:
-            postData = {"roomId": <!!!REPLACEME!!!>, "text": <!!!REPLACEME!!!>}
-            postData = json.dumps(postData)
 
-            # the Webex Teams HTTP headers, including the Authoriztion and Content-Type
-            HTTPHeaders = {"Authorization": <!!!REPLACEME!!!>, "Content-Type": <!!!REPLACEME!!!>}   
+#  and responseMessage == "ok"
+        if command == "showrun":
+            filename = "show_running_config.txt"
+            if not os.path.exists(filename):
+                with open(filename, "w") as f:
+                    f.write("helpme")
 
-        # Post the call to the Webex Teams message API.
-        r = requests.post(
-            "<!!!REPLACEME with URL of Webex Teams Messages API!!!>",
-            data=<!!!REPLACEME!!!>,
-            headers=<!!!REPLACEME!!!>,
-        )
-        if not r.status_code == 200:
-            raise Exception(
-                "Incorrect reply from Webex Teams API. Status code: {}".format(r.status_code)
+            with open(filename, "rb") as f:
+                fileobject = f.read()
+
+            postData = MultipartEncoder(
+                fields={
+                    "roomId": roomIdToGetMessages,
+                    "text": "show running config",
+                    "files": (filename, fileobject, "text/plain")
+                }
             )
+
+            HTTPHeaders = {
+                "Authorization": f"Bearer {ACCESS_TOKEN}",
+                "Content-Type": postData.content_type
+            }
+        else:
+            responseMessage = "no command"
+            text_to_send = responseMessage
+            postData = json.dumps({
+                "roomId": roomIdToGetMessages,
+                "text": text_to_send
+            })
+            HTTPHeaders = {
+                "Authorization": f"Bearer {ACCESS_TOKEN}",
+                "Content-Type": "application/json"
+            }
+
+        response = requests.post(
+            "https://webexapis.com/v1/messages",
+            data=postData,
+            headers=HTTPHeaders
+        )
