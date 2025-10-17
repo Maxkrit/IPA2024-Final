@@ -12,7 +12,7 @@ import time
 import os
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
-# import restconf_final
+import restconf_final
 
 #######################################################################################
 # 2. Assign the Webex accesssetx WEBEX_TOKEN "OGFmNzY3MjMtMzM5OS00MTYwLThkM2QtYTBmN2EzZGQ4YmQ1YTA1YWFkNzktMDRh_PS65_e37c9b35-5d15-4275-8997-b5c6f91a842d"
@@ -28,6 +28,62 @@ roomIdToGetMessages = (
 )
 
 last_message_id = None  # เก็บ ID ของข้อความล่าสุดที่เราอ่านแล้ว
+
+def json_to_cli(data):
+    cli = []
+
+    # hostname
+    if "hostname" in data:
+        cli.append(f"hostname {data['hostname']}")
+        cli.append("!")
+
+    # username
+    if "username" in data:
+        for u in data["username"]:
+            pwd = u["password"]["password"]
+            cli.append(f"username {u['name']} privilege {u['privilege']} password {pwd}")
+        cli.append("!")
+
+    # ip domain name
+    if "ip" in data and "domain" in data["ip"]:
+        cli.append(f"ip domain name {data['ip']['domain']['name']}")
+        cli.append("!")
+
+    # ssh
+    if "ip" in data and "ssh" in data["ip"]:
+        cli.append(f"ip ssh version {data['ip']['ssh']['version']}")
+        cli.append("!")
+
+    # HTTP server
+    http = data["ip"].get("Cisco-IOS-XE-http:http", {})
+    if http.get("server"):
+        cli.append("ip http server")
+    if http.get("secure-server"):
+        cli.append("ip http secure-server")
+    cli.append("!")
+
+    # ntp
+    if "ntp" in data and "Cisco-IOS-XE-ntp:server" in data["ntp"]:
+        for s in data["ntp"]["Cisco-IOS-XE-ntp:server"]["server-list"]:
+            cli.append(f"ntp server {s['ip-address']}")
+        cli.append("!")
+
+    # interfaces
+    if "interface" in data:
+        for intf_type, intfs in data["interface"].items():
+            for intf in intfs:
+                cli.append(f"interface {intf_type}{intf['name']}")
+                if intf.get("description"):
+                    cli.append(f" description {intf['description']}")
+                if intf.get("ip") and intf["ip"].get("address"):
+                    primary = intf["ip"]["address"]["primary"]
+                    cli.append(f" ip address {primary['address']} {primary['mask']}")
+                if intf.get("shutdown") is not None:
+                    cli.append(" shutdown")
+                cli.append("!")
+
+    return "\n".join(cli)
+
 
 while True:
     # always add 1 second of delay to the loop to not go over a rate limit of API calls
@@ -86,9 +142,9 @@ while True:
     responseMessage = ""
     # ตรวจสอบว่าข้อความนี้เราอ่านแล้วหรือยัง
     if command == ("create"):
-        print("create")
+        restconf_final.create(student_id, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "delete":
-        print("delete")
+        restconf_final.delete(student_id, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "enable":
         print("enable")
     elif command == "disable":
@@ -114,42 +170,56 @@ while True:
         # https://developer.webex.com/docs/basics for more detail
 
 
+    
 #  and responseMessage == "ok"
         if command == "showrun":
-            filename = "show_running_config.txt"
-            if not os.path.exists(filename):
+            router_ip = "10.0.15.61"
+            username = "admin"
+            password = "cisco"
+
+            # เรียกฟังก์ชัน showrun จาก restconf_final
+            running_config_json = restconf_final.showrun(student_id, roomIdToGetMessages, ACCESS_TOKEN)
+
+            if running_config_json:
+                # แปลง JSON -> CLI string
+                cli_text = json_to_cli(running_config_json["Cisco-IOS-XE-native:native"])
+                
+                # เขียนลงไฟล์
+                filename = f"{student_id}_runningconfig_router.txt"
                 with open(filename, "w") as f:
-                    f.write("helpme")
+                    f.write(cli_text)
 
-            with open(filename, "rb") as f:
-                fileobject = f.read()
+                # เปิดไฟล์แบบ binary สำหรับส่ง Webex
+                with open(filename, "rb") as f:
+                    fileobject = f.read()
 
-            postData = MultipartEncoder(
-                fields={
-                    "roomId": roomIdToGetMessages,
-                    "text": "show running config",
-                    "files": (filename, fileobject, "text/plain")
+                postData = MultipartEncoder(
+                    fields={
+                        "roomId": roomIdToGetMessages,
+                        "text": "show running config",
+                        "files": (filename, fileobject, "text/plain")
+                    }
+                )
+
+                HTTPHeaders = {
+                    "Authorization": f"Bearer {ACCESS_TOKEN}",
+                    "Content-Type": postData.content_type
                 }
+
+            else:
+                # กรณีดึง config ไม่ได้
+                postData = json.dumps({
+                    "roomId": roomIdToGetMessages,
+                    "text": f"Failed to fetch running config for {student_id}"
+                })
+                HTTPHeaders = {
+                    "Authorization": f"Bearer {ACCESS_TOKEN}",
+                    "Content-Type": "application/json"
+                }
+
+            # ส่ง POST request ไป Webex
+            response = requests.post(
+                "https://webexapis.com/v1/messages",
+                data=postData,
+                headers=HTTPHeaders
             )
-
-            HTTPHeaders = {
-                "Authorization": f"Bearer {ACCESS_TOKEN}",
-                "Content-Type": postData.content_type
-            }
-        else:
-            responseMessage = "no command"
-            text_to_send = responseMessage
-            postData = json.dumps({
-                "roomId": roomIdToGetMessages,
-                "text": text_to_send
-            })
-            HTTPHeaders = {
-                "Authorization": f"Bearer {ACCESS_TOKEN}",
-                "Content-Type": "application/json"
-            }
-
-        response = requests.post(
-            "https://webexapis.com/v1/messages",
-            data=postData,
-            headers=HTTPHeaders
-        )
