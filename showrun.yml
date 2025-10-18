@@ -1,0 +1,25 @@
+---
+- name: Get running config from router
+  hosts: "all"
+  gather_facts: no
+  vars:
+    ansible_network_os: cisco.ios.ios
+    ansible_connection: network_cli
+    ansible_user: admin
+    ansible_password: cisco
+    ansible_become: yes
+    ansible_become_method: enable
+    ansible_become_password: cisco
+    ansible_command_timeout: 60
+
+  tasks:
+    - name: Show running config
+      cisco.ios.ios_command:
+        commands:
+          - show running-config
+      register: output
+
+    - name: Write running config to file
+      copy:
+        content: "{{ output.stdout[0] }}"
+        dest: "/mnt/c/Users/LAB306_XX/Desktop/ipa-2024/IPA2024-Final/66070007_runningconfig_router.txt"

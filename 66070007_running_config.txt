@@ -1,0 +1,13 @@
+
+PLAY [Get running config from router] ******************************************
+
+TASK [Show running config] *****************************************************
+ok: [10.0.15.63]
+
+TASK [Write running config to file] ********************************************
+changed: [10.0.15.63]
+
+PLAY RECAP *********************************************************************
+10.0.15.63                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+
