@@ -2,12 +2,10 @@
 PLAY [Get running config from router] ******************************************
 
 TASK [Show running config] *****************************************************
-ok: [10.0.15.63]
-
-TASK [Write running config to file] ********************************************
-changed: [10.0.15.63]
+fatal: [10.0.15.63]: FAILED! => {"changed": false, "msg": "[Errno None] Unable to connect to port 22 on 10.0.15.63"}
 
 PLAY RECAP *********************************************************************
-10.0.15.63                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+10.0.15.63                 : ok=0    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
 
 
+[WARNING]: ansible-pylibssh not installed, falling back to paramiko

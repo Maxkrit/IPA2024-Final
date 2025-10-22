@@ -26,66 +26,10 @@ ACCESS_TOKEN = os.environ["token"]
 
 # Defines a variable that will hold the roomId
 roomIdToGetMessages = (
-    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vN2Q0Nzk0MDAtYWFiOS0xMWYwLWIyMjEtM2Q0YjM3Nzk0OTVl"
+    "Y2lzY29zcGFyazovL3VybjpURUFNOnVzLXdlc3QtMl9yL1JPT00vYmQwODczMTAtNmMyNi0xMWYwLWE1MWMtNzkzZDM2ZjZjM2Zm"
 )
 router_ip = "10.0.15.63"
 last_message_id = None  # เก็บ ID ของข้อความล่าสุดที่เราอ่านแล้ว
-
-def json_to_cli(data):
-    cli = []
-
-    # hostname
-    if "hostname" in data:
-        cli.append(f"hostname {data['hostname']}")
-        cli.append("!")
-
-    # username
-    if "username" in data:
-        for u in data["username"]:
-            pwd = u["password"]["password"]
-            cli.append(f"username {u['name']} privilege {u['privilege']} password {pwd}")
-        cli.append("!")
-
-    # ip domain name
-    if "ip" in data and "domain" in data["ip"]:
-        cli.append(f"ip domain name {data['ip']['domain']['name']}")
-        cli.append("!")
-
-    # ssh
-    if "ip" in data and "ssh" in data["ip"]:
-        cli.append(f"ip ssh version {data['ip']['ssh']['version']}")
-        cli.append("!")
-
-    # HTTP server
-    http = data["ip"].get("Cisco-IOS-XE-http:http", {})
-    if http.get("server"):
-        cli.append("ip http server")
-    if http.get("secure-server"):
-        cli.append("ip http secure-server")
-    cli.append("!")
-
-    # ntp
-    if "ntp" in data and "Cisco-IOS-XE-ntp:server" in data["ntp"]:
-        for s in data["ntp"]["Cisco-IOS-XE-ntp:server"]["server-list"]:
-            cli.append(f"ntp server {s['ip-address']}")
-        cli.append("!")
-
-    # interfaces
-    if "interface" in data:
-        for intf_type, intfs in data["interface"].items():
-            for intf in intfs:
-                cli.append(f"interface {intf_type}{intf['name']}")
-                if intf.get("description"):
-                    cli.append(f" description {intf['description']}")
-                if intf.get("ip") and intf["ip"].get("address"):
-                    primary = intf["ip"]["address"]["primary"]
-                    cli.append(f" ip address {primary['address']} {primary['mask']}")
-                if intf.get("shutdown") is not None:
-                    cli.append(" shutdown")
-                cli.append("!")
-
-    return "\n".join(cli)
-
 
 while True:
     # always add 1 second of delay to the loop to not go over a rate limit of API calls
@@ -144,13 +88,13 @@ while True:
     responseMessage = ""
     # ตรวจสอบว่าข้อความนี้เราอ่านแล้วหรือยัง
     if command == ("create"):
-        restconf_final.create(student_id, roomIdToGetMessages, ACCESS_TOKEN)
+        restconf_final.create(student_id,router_ip, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "delete":
-        restconf_final.delete(student_id, roomIdToGetMessages, ACCESS_TOKEN)
+        restconf_final.delete(student_id,router_ip, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "enable":
-        restconf_final.enable(student_id, roomIdToGetMessages, ACCESS_TOKEN)
+        restconf_final.enable(student_id,router_ip, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "disable":
-        restconf_final.disable(student_id, roomIdToGetMessages, ACCESS_TOKEN)
+        restconf_final.disable(student_id,router_ip, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "status":
         restconf_final.status(student_id,router_ip, roomIdToGetMessages, ACCESS_TOKEN)
     elif command == "gigabit_status":
@@ -174,9 +118,9 @@ while True:
         )
 
         if response.status_code == 200:
-            print("✅ Status sent to Webex!")
+            print("Status sent to Webex!")
         else:
-            print("❌ Failed to send message:", response.text)
+            print("Failed to send message:", response.text)
     else:
         
 # 6. Complete the code to post the message to the Webex Teams room.
@@ -193,9 +137,6 @@ while True:
         # Read Send a Message with Attachments Local File Attachments
         # https://developer.webex.com/docs/basics for more detail
 
-
-    
-#  and responseMessage == "ok"
         if command == "showrun":
             
             # เรียกฟังก์ชัน showrun จาก ansible_final
@@ -206,17 +147,17 @@ while True:
                 print("Response is 'fuck' — ไม่ส่งไฟล์ไป Webex")
                 
             else:
-                # ✅ เขียนผลลัพธ์ลงไฟล์ใหม่
+                # เขียนผลลัพธ์ลงไฟล์ใหม่
                 filename = f"{student_id}_running_config.txt"
                 myfile = f"{student_id}_runningconfig_router.txt"
                 with open(filename, "w") as f:
                     f.write(ansible_output)
 
-                # ✅ เปิดไฟล์เพื่อแนบส่งไป Webex
+                # เปิดไฟล์เพื่อแนบส่งไป Webex
                 with open(myfile, "rb") as f:
                     fileobject = f.read()
 
-                # ✅ เตรียม multipart form สำหรับส่งไฟล์ไป Webex
+                # เตรียม multipart form สำหรับส่งไฟล์ไป Webex
 
                 myfile = f"{student_id}_runningconfig_router.txt"
                 postData = MultipartEncoder(
@@ -232,11 +173,11 @@ while True:
                     "Content-Type": postData.content_type
                 }
 
-                # ✅ ส่งไฟล์ไป Webex
+                #ส่งไฟล์ไป Webex
                 response = requests.post(
                     "https://webexapis.com/v1/messages",
                     data=postData,
                     headers=HTTPHeaders
                 )
 
-                print(f"ส่งไฟล์ {filename} ไปยัง Webex เรียบร้อยแล้ว ✅")
+                print(f"ส่งไฟล์ {filename} ไปยัง Webex เรียบร้อยแล้ว ")

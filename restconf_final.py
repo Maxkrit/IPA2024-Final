@@ -1,16 +1,10 @@
 import requests
-import json
 import base64
-import subprocess
-import tempfile
-import os
 
 requests.packages.urllib3.disable_warnings()
 
 
 # Router IP Address is 10.0.15.181-184
-router_ip = "10.0.15.63"  # เปลี่ยนตาม Router ที่ต้องการ
-api_url = f"https://{router_ip}/restconf/data/Cisco-IOS-XE-native:native"
 
 # the RESTCONF HTTP headers, including the Accept and Content-Type
 # Two YANG data formats (JSON and XML) work with RESTCONF 
@@ -22,7 +16,7 @@ headers = {
 basicauth = ("admin", "cisco")
 BASIC_AUTH = base64.b64encode(f"{basicauth[0]}:{basicauth[1]}".encode()).decode()
 
-def create(student_id, room_id, access_token):
+def create(student_id, router_ip, room_id, access_token):
     import requests
     import base64
     import json
@@ -36,7 +30,7 @@ def create(student_id, room_id, access_token):
     ip_addr = f"172.{x}.{y}.1"
 
 
-    api_url = "https://10.0.15.63/restconf/data/ietf-interfaces:interfaces"
+    api_url = f"https://{router_ip}/restconf/data/ietf-interfaces:interfaces"
 
     headers = {
         "Content-Type": "application/yang-data+json",
@@ -101,7 +95,7 @@ def create(student_id, room_id, access_token):
     requests.post("https://webexapis.com/v1/messages", data=postData, headers=HTTPHeaders)
 
 
-def delete(student_id, room_id, access_token):
+def delete(student_id, router_ip, room_id, access_token):
     import requests
     import base64
     import json
@@ -109,7 +103,7 @@ def delete(student_id, room_id, access_token):
     basicauth = ("admin", "cisco")
     BASIC_AUTH = base64.b64encode(f"{basicauth[0]}:{basicauth[1]}".encode()).decode()
 
-    api_url = f"https://10.0.15.63/restconf/data/ietf-interfaces:interfaces"
+    api_url = f"https://{router_ip}/restconf/data/ietf-interfaces:interfaces"
 
     headers = {
         "Content-Type": "application/yang-data+json",
@@ -153,7 +147,7 @@ def delete(student_id, room_id, access_token):
     }
     requests.post("https://webexapis.com/v1/messages", data=postData, headers=HTTPHeaders)
 
-def enable(student_id, room_id, access_token):
+def enable(student_id, router_ip, room_id, access_token):
     import requests
     import base64
     import json
@@ -162,7 +156,7 @@ def enable(student_id, room_id, access_token):
     basicauth = ("admin", "cisco")
     BASIC_AUTH = base64.b64encode(f"{basicauth[0]}:{basicauth[1]}".encode()).decode()
 
-    api_url = "https://10.0.15.63/restconf/data/ietf-interfaces:interfaces"
+    api_url = f"https://{router_ip}/restconf/data/ietf-interfaces:interfaces"
 
     headers = {
         "Content-Type": "application/yang-data+json",
@@ -211,10 +205,10 @@ def enable(student_id, room_id, access_token):
     requests.post("https://webexapis.com/v1/messages", data=postData, headers=HTTPHeaders)
 
 
-def disable(student_id, room_id, access_token):
+def disable(student_id, router_ip, room_id, access_token):
     basicauth = ("admin", "cisco")
     BASIC_AUTH = base64.b64encode(f"{basicauth[0]}:{basicauth[1]}".encode()).decode()
-    api_url = "https://10.0.15.63/restconf/data/ietf-interfaces:interfaces"
+    api_url = f"https://{router_ip}/restconf/data/ietf-interfaces:interfaces"
     interface_name = f"Loopback{student_id}"
     headers = {
         "Content-Type": "application/yang-data+json",
